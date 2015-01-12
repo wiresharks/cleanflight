@@ -35,7 +35,7 @@
 
 #include "pwm_rx.h"
 
-#define PPM_CAPTURE_COUNT 12
+#define PPM_CAPTURE_COUNT 16
 #define PWM_INPUT_PORT_COUNT 8
 
 #if PPM_CAPTURE_COUNT > MAX_PWM_INPUT_PORTS
