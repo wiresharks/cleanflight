@@ -624,7 +624,10 @@ void processRx(void)
 
 void loop(void)
 {
-    static uint32_t loopTime;
+    static uint32_t nextImuUpdateAt = 0;
+
+    currentTime = micros();
+
 #if defined(BARO) || defined(SONAR)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
@@ -633,6 +636,7 @@ void loop(void)
 
     if (shouldProcessRx(currentTime)) {
         processRx();
+
 
 #ifdef BARO
         // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
@@ -653,9 +657,6 @@ void loop(void)
 #endif
 
     } else {
-        // not processing rx this iteration
-        executePeriodicTasks();
-
         // if GPS feature is enabled, gpsThread() will be called at some intervals to check for stuck
         // hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
         // change this based on available hardware
@@ -666,16 +667,17 @@ void loop(void)
 #endif
     }
 
-    currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
-        loopTime = currentTime + masterConfig.looptime;
+    executePeriodicTasks();
+
+    if (masterConfig.looptime == 0 || (int32_t)(currentTime - nextImuUpdateAt) >= 0) {
+        nextImuUpdateAt = currentTime + masterConfig.looptime;
 
         imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 
         // Measure loop rate just after reading the sensors
-        currentTime = micros();
-        cycleTime = (int32_t)(currentTime - previousTime);
-        previousTime = currentTime;
+        uint32_t imuLoopCompletedAt = micros();
+        cycleTime = (int32_t)(imuLoopCompletedAt - previousTime);
+        previousTime = imuLoopCompletedAt;
 
         annexCode();
 #if defined(BARO) || defined(SONAR)
