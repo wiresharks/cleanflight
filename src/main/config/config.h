@@ -60,7 +60,7 @@ void initEEPROM(void);
 void resetEEPROM(void);
 void readEEPROM(void);
 void readEEPROMAndNotify(void);
-void writeEEPROM();
+bool writeEEPROM();
 void ensureEEPROMContainsValidData(void);
 void saveConfigAndNotify(void);
 

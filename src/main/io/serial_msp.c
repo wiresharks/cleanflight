@@ -1255,7 +1255,7 @@ static bool processInCommand(void)
             if (masterConfig.current_profile_index > 2) {
                 masterConfig.current_profile_index = 0;
             }
-            writeEEPROM();
+            (void) writeEEPROM();
             readEEPROM();
         }
         break;
@@ -1462,7 +1462,7 @@ static bool processInCommand(void)
             headSerialError(0);
             return true;
         }
-        writeEEPROM();
+        (void) writeEEPROM();
         readEEPROM();
         break;
 

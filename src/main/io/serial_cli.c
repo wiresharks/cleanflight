@@ -457,6 +457,13 @@ const clivalue_t valueTable[] = {
     { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
     { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
 #endif
+    { "acc_calib_roll",           VAR_INT16  | MASTER_VALUE,  &masterConfig.accZero.values.roll, -32767, 32767 },
+    { "acc_calib_pitch",          VAR_INT16  | MASTER_VALUE,  &masterConfig.accZero.values.pitch, -32767, 32767 },
+    { "acc_calib_yaw",            VAR_INT16  | MASTER_VALUE,  &masterConfig.accZero.values.yaw, -32767, 32767 },
+
+    { "mag_calib_roll",           VAR_INT16  | MASTER_VALUE,  &masterConfig.magZero.values.roll, -32767, 32767 },
+    { "mag_calib_pitch",          VAR_INT16  | MASTER_VALUE,  &masterConfig.magZero.values.pitch, -32767, 32767 },
+    { "mag_calib_yaw",            VAR_INT16  | MASTER_VALUE,  &masterConfig.magZero.values.yaw, -32767, 32767 },
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
@@ -1458,7 +1465,7 @@ static void cliProfile(char *cmdline)
         i = atoi(cmdline);
         if (i >= 0 && i < MAX_PROFILE_COUNT) {
             masterConfig.current_profile_index = i;
-            writeEEPROM();
+            (void) writeEEPROM();
             readEEPROM();
             cliProfile("");
         }
@@ -1495,7 +1502,7 @@ static void cliSave(char *cmdline)
 
     cliPrint("Saving");
     //copyCurrentProfileToProfileSlot(masterConfig.current_profile_index);
-    writeEEPROM();
+    (void) writeEEPROM();
     cliReboot();
 }
 

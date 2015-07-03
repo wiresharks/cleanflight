@@ -848,7 +848,7 @@ void readEEPROMAndNotify(void)
     beeperConfirmationBeeps(1);
 }
 
-void writeEEPROM(void)
+bool writeEEPROM(void)
 {
     // Generate compile time error if the config does not fit in the reserved area of flash.
     BUILD_BUG_ON(sizeof(master_t) > FLASH_TO_RESERVE_FOR_CONFIG);
@@ -856,6 +856,7 @@ void writeEEPROM(void)
     FLASH_Status status = 0;
     uint32_t wordOffset;
     int8_t attemptsRemaining = 3;
+    bool changed;
 
     // prepare checksum/version constants
     masterConfig.version = EEPROM_CONF_VERSION;
@@ -865,39 +866,45 @@ void writeEEPROM(void)
     masterConfig.chk = 0; // erase checksum before recalculating
     masterConfig.chk = calculateChecksum((const uint8_t *) &masterConfig, sizeof(master_t));
 
+    changed = (memcmp((const master_t *)CONFIG_START_FLASH_ADDRESS, &masterConfig, sizeof(master_t)) != 0);
+
     // write it
-    FLASH_Unlock();
-    while (attemptsRemaining--) {
+    if(changed) {
+      FLASH_Unlock();
+      while (attemptsRemaining--) {
 #ifdef STM32F303
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPERR);
 #endif
 #ifdef STM32F10X
-        FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+          FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
 #endif
-        for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
-            if (wordOffset % FLASH_PAGE_SIZE == 0) {
-                status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);
-                if (status != FLASH_COMPLETE) {
-                    break;
-                }
-            }
+          for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
+              if (wordOffset % FLASH_PAGE_SIZE == 0) {
+                  status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);
+                  if (status != FLASH_COMPLETE) {
+                      break;
+                  }
+              }
 
-            status = FLASH_ProgramWord(CONFIG_START_FLASH_ADDRESS + wordOffset,
-                    *(uint32_t *) ((char *) &masterConfig + wordOffset));
-            if (status != FLASH_COMPLETE) {
-                break;
-            }
-        }
-        if (status == FLASH_COMPLETE) {
-            break;
-        }
-    }
-    FLASH_Lock();
+              status = FLASH_ProgramWord(CONFIG_START_FLASH_ADDRESS + wordOffset,
+                      *(uint32_t *) ((char *) &masterConfig + wordOffset));
+              if (status != FLASH_COMPLETE) {
+                  break;
+              }
+          }
+          if (status == FLASH_COMPLETE) {
+              break;
+          }
+      }
+      FLASH_Lock();
 
-    // Flash write failed - just die now
-    if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
-        failureMode(10);
+      // Flash write failed - just die now
+      if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
+          failureMode(10);
+      }
     }
+
+    return changed;
 }
 
 void ensureEEPROMContainsValidData(void)
@@ -912,19 +919,19 @@ void ensureEEPROMContainsValidData(void)
 void resetEEPROM(void)
 {
     resetConf();
-    writeEEPROM();
+    (void) writeEEPROM();
 }
 
 void saveConfigAndNotify(void)
 {
-    writeEEPROM();
+    (void) writeEEPROM();
     readEEPROMAndNotify();
 }
 
 void changeProfile(uint8_t profileIndex)
 {
     masterConfig.current_profile_index = profileIndex;
-    writeEEPROM();
+    (void) writeEEPROM();
     readEEPROM();
     beeperConfirmationBeeps(profileIndex + 1);
 }
