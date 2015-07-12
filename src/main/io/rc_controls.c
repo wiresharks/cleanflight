@@ -428,8 +428,15 @@ void configureAdjustment(uint8_t index, uint8_t auxSwitchChannelIndex, const adj
     adjustmentState->auxChannelIndex = auxSwitchChannelIndex;
     adjustmentState->config = adjustmentConfig;
     adjustmentState->timeoutAt = 0;
-
     MARK_ADJUSTMENT_FUNCTION_AS_READY(index);
+}
+
+void resetAdjustmentConfiguration(uint8_t index) {
+  adjustmentState_t *adjustmentState = &adjustmentStates[index];
+  if (adjustmentState->config != NULL) {
+    adjustmentState->config = NULL;
+    MARK_ADJUSTMENT_FUNCTION_AS_BUSY(index);
+  }
 }
 
 void applyStepAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustmentFunction, int delta) {
@@ -612,8 +619,8 @@ void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rx
             continue;
         }
 
-        int32_t signedDiff = now - adjustmentState->timeoutAt;
-        bool canResetReadyStates = signedDiff >= 0L;
+        const int32_t signedDiff = now - adjustmentState->timeoutAt;
+        const bool canResetReadyStates = signedDiff >= 0L;
 
         if (canResetReadyStates) {
             adjustmentState->timeoutAt = now + RESET_FREQUENCY_2HZ;
@@ -663,8 +670,11 @@ void updateAdjustmentStates(adjustmentRange_t *adjustmentRanges)
         if (isRangeActive(adjustmentRange->auxChannelIndex, &adjustmentRange->range)) {
 
             const adjustmentConfig_t *adjustmentConfig = &defaultAdjustmentConfigs[adjustmentRange->adjustmentFunction - ADJUSTMENT_FUNCTION_CONFIG_INDEX_OFFSET];
-
             configureAdjustment(adjustmentRange->adjustmentIndex, adjustmentRange->auxSwitchChannelIndex, adjustmentConfig);
+        }
+        else {
+          // Switch moved out of range, reset the configuration.
+          resetAdjustmentConfiguration(adjustmentRange->auxChannelIndex);
         }
     }
 }

@@ -230,6 +230,10 @@ typedef struct adjustmentState_s {
 
 void resetAdjustmentStates(void);
 void configureAdjustment(uint8_t index, uint8_t auxChannelIndex, const adjustmentConfig_t *adjustmentConfig);
+/*!
+ * \brief Reset the adjustment range (switch is out of range)
+ */
+void resetAdjustmentConfiguration(uint8_t index);
 void updateAdjustmentStates(adjustmentRange_t *adjustmentRanges);
 void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rxConfig);
 
